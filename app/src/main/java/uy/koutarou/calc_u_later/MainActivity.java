@@ -1,23 +1,22 @@
 package uy.koutarou.calc_u_later;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.method.KeyListener;
-import android.util.Log;
 import android.view.*;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
+
 import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.ListAdapter;
-import androidx.recyclerview.widget.RecyclerView;
-import org.jetbrains.annotations.NotNull;
+import androidx.preference.PreferenceManager;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -29,7 +28,6 @@ public class MainActivity extends AppCompatActivity {
 
     ExpressionProcessor expressionProcessor = new ExpressionProcessor();
     private EditText textInput;
-    private ListView historyList;
     private final List<String> history = new ArrayList<>();
     private HistoryAdapter adapter;
     private int historyIndex = 0;
@@ -60,25 +58,34 @@ public class MainActivity extends AppCompatActivity {
                         textEditable.clear();
                     }
                     textEditable.append((char) ('0' + (event.getKeyCode() - KeyEvent.KEYCODE_0)));
-                } else if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && textEditable.length() > 0) {
-                    if (textEditable.toString().equals("3RR0R")) {
-                        textEditable.clear();
-                    } else
-                        textEditable.delete(textEditable.length() - 1, textEditable.length());
-                } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP && !history.isEmpty()) {
-                    if (historyIndex > 0) {
-                        historyIndex--;
-                    } else {
-                        historyIndex = 0;
+                } else {
+                    int GOBACK_KEYCODE = KeyEvent.keyCodeFromString(
+                            PreferenceManager
+                                    .getDefaultSharedPreferences(
+                                            MainActivity.this
+                                    )
+                                    .getString("delete_key", "KEYCODE_BACK")
+                    );
+                    if (event.getKeyCode() == GOBACK_KEYCODE && textEditable.length() > 0) {
+                        if (textEditable.toString().equals("3RR0R")) {
+                            textEditable.clear();
+                        } else
+                            textEditable.delete(textEditable.length() - 1, textEditable.length());
+                    } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP && !history.isEmpty()) {
+                        if (historyIndex > 0) {
+                            historyIndex--;
+                        } else {
+                            historyIndex = 0;
+                        }
+                        textInput.setText(history.get(historyIndex).split("=")[0].trim());
+                    } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && !history.isEmpty()) {
+                        if (historyIndex < history.size() - 1) {
+                            historyIndex++;
+                        } else {
+                            historyIndex = history.size() - 1;
+                        }
+                        textInput.setText(history.get(historyIndex).split("=")[0].trim());
                     }
-                    textInput.setText(history.get(historyIndex).split("=")[0].trim());
-                } else if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && !history.isEmpty()) {
-                    if (historyIndex < history.size() - 1) {
-                        historyIndex++;
-                    } else {
-                        historyIndex = history.size() - 1;
-                    }
-                    textInput.setText(history.get(historyIndex).split("=")[0].trim());
                 }
             }
             return true;
@@ -114,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            if(convertView == null) {
+            if (convertView == null) {
                 convertView = getLayoutInflater().inflate(R.layout.list_item, parent, false);
             }
 
@@ -131,7 +138,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if(event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER && event.getAction() == KeyEvent.ACTION_UP) {
+        int eventKeyOk = KeyEvent.keyCodeFromString(PreferenceManager.getDefaultSharedPreferences(this).getString("ok_key", "KEYCODE_DPAD_CENTER"));
+        if (event.getKeyCode() == eventKeyOk && event.getAction() == KeyEvent.ACTION_UP) {
             Editable textEditable = textInput.getText();
             String expression = textEditable.toString();
             try {
@@ -141,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
                 String numberFormatted = df.format(number);
                 textInput.setText(numberFormatted);
                 history.add(expression + " = " + numberFormatted);
-                historyIndex = history.size()-1;
+                historyIndex = history.size() - 1;
                 adapter.notifyDataSetChanged();
             } catch (Exception e) {
                 textInput.setText("3RR0R");
@@ -156,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        historyList = findViewById(R.id.historyList);
+        ListView historyList = findViewById(R.id.historyList);
         adapter = new HistoryAdapter();
         historyList.setAdapter(adapter);
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -169,15 +177,22 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if(item.getItemId() == R.id.action_about) {
+        if (item.getItemId() == R.id.action_about) {
             showAbout();
             return true;
+        } else if (item.getItemId() == R.id.action_preferences) {
+            showDebug();
         }
         return super.onOptionsItemSelected(item);
     }
 
     private void showAbout() {
         Intent aboutIntent = new Intent(this, About.class);
+        this.startActivity(aboutIntent);
+    }
+
+    private void showDebug() {
+        Intent aboutIntent = new Intent(this, Preferences.class);
         this.startActivity(aboutIntent);
     }
 

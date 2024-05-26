@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <EditTextPreference
+        app:key="ok_key"
+        app:title="OK Key Button"
+        app:defaultValue="KEYCODE_DPAD_CENTER"/>
+    <EditTextPreference
+        app:key="delete_key"
+        app:title="Delete Button"
+        app:defaultValue="KEYCODE_BACK"/>
+</androidx.preference.PreferenceScreen>
